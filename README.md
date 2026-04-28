@@ -1,25 +1,37 @@
-# CyberGuard — ML Bullying Detector
+# Cyberbullying Prediction
 
-Cyberbullying & toxic content detection using an ensemble ML model.
-Training data includes real-world profanity and abusive language patterns.
+This is a simple web application project.
 
-## Quick Start
+## Project Structure
 
-  pip install -r requirements.txt
-  python app.py
-  # Open http://localhost:5050
+- `app.py`: Main Python application file (likely a Flask or similar web server).
+- `requirements.txt`: Lists Python dependencies required to run the project.
+- `static/index.html`: Main HTML file for the web interface.
 
-## Files
-  app.py              — Flask backend + model logic
-  model.pkl           — Pre-trained model (97.4% accuracy, ready to use)
-  static/index.html   — Frontend UI (same design as reference)
-  requirements.txt    — Python dependencies
+## Getting Started
 
-## API
-  POST /predict  { "text": "..." }          → analysis result
-  POST /batch    { "texts": ["...", ...] }  → up to 20 results
-  GET  /stats                               → model info
+### Prerequisites
+- Python 3.x
+- All dependencies listed in `requirements.txt`
 
-## Notes
-  - Delete model.pkl to force retrain on startup
-  - For educational and research use only
+### Installation
+1. Clone or download this repository.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Running the Application
+1. Start the server:
+   ```bash
+   python app.py
+   ```
+2. Open your browser and navigate to the address shown in the terminal (usually `http://127.0.0.1:5000/`).
+
+## Project Files
+- **app.py**: Main backend logic.
+- **requirements.txt**: Python packages needed.
+- **static/index.html**: Frontend HTML file.
+
+## License
+This project is for educational purposes.
