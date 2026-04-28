@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CyberGuard · Bullying Detector</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@200;300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f7f6f3;
+  --surface:   #ffffff;
+  --border:    #e8e4dc;
+  --border2:   #d4cfc5;
+  --text:      #1a1814;
+  --muted:     #8a857a;
+  --faint:     #c8c3b8;
+  --none:      #2d8a4e;
+  --none-bg:   #edf7f1;
+  --none-bd:   #b8dfc8;
+  --low:       #b07d1a;
+  --low-bg:    #fdf6e3;
+  --low-bd:    #e8d49a;
+  --medium:    #c45c1a;
+  --medium-bg: #fdf0e8;
+  --medium-bd: #f0c8a8;
+  --high:      #c02020;
+  --high-bg:   #fdf0f0;
+  --high-bd:   #f0b8b8;
+  --mono:      'DM Mono', monospace;
+  --sans:      'DM Sans', sans-serif;
+}
+
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page shell ── */
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 80px;
+}
+
+/* ── Wordmark ── */
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 56px;
+}
+.wordmark-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--text);
+}
+.wordmark-dot { color: var(--faint); }
+.wordmark-tag {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+
+/* ── Headline ── */
+.headline {
+  font-size: 32px;
+  font-weight: 200;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.subline {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 300;
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 480px;
+}
+
+/* ── Input area ── */
+.input-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+  margin-bottom: 12px;
+}
+.input-block:focus-within {
+  border-color: var(--border2);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 20px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  line-height: 1.65;
+  caret-color: var(--text);
+}
+textarea::placeholder { color: var(--faint); }
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.char-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+.char-count.warn { color: var(--medium); }
+
+.analyze-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--surface);
+  background: var(--text);
+  border: none;
+  border-radius: 3px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.analyze-btn:hover { opacity: .82; }
+.analyze-btn:active { transform: scale(.98); }
+.analyze-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── Examples ── */
+.examples-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 10px;
+}
+.examples {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+.ex-chip {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.ex-chip:hover { border-color: var(--border2); color: var(--text); }
+.ex-chip.toxic { border-color: var(--high-bd); color: var(--high); }
+.ex-chip.toxic:hover { background: var(--high-bg); }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 48px 0;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.divider.visible { opacity: 1; }
+
+/* ── Result panel ── */
+.result {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.result.visible { opacity: 1; transform: none; }
+
+/* ── Verdict ── */
+.verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.verdict-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.verdict-badge.NONE   { background: var(--none-bg);   color: var(--none);   border-color: var(--none-bd); }
+.verdict-badge.LOW    { background: var(--low-bg);    color: var(--low);    border-color: var(--low-bd); }
+.verdict-badge.MEDIUM { background: var(--medium-bg); color: var(--medium); border-color: var(--medium-bd); }
+.verdict-badge.HIGH   { background: var(--high-bg);   color: var(--high);   border-color: var(--high-bd); }
+
+.verdict-label {
+  font-size: 22px;
+  font-weight: 200;
+  letter-spacing: -.01em;
+}
+.verdict-label.bullying { color: var(--high); }
+.verdict-label.safe     { color: var(--none); }
+
+/* ── Metrics grid ── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.metric {
+  background: var(--surface);
+  padding: 20px 18px;
+}
+.metric-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.metric-val {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1;
+}
+.metric-val.danger { color: var(--high); }
+.metric-val.warn   { color: var(--medium); }
+.metric-val.ok     { color: var(--none); }
+.metric-unit {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+
+/* ── Risk bar ── */
+.risk-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.risk-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.risk-pct {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+}
+.risk-track {
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.risk-fill {
+  height: 100%;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.9s cubic-bezier(.4,0,.2,1);
+}
+.risk-fill.NONE   { background: var(--none); }
+.risk-fill.LOW    { background: var(--low); }
+.risk-fill.MEDIUM { background: var(--medium); }
+.risk-fill.HIGH   { background: var(--high); }
+
+/* Zone ticks */
+.risk-zones {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.risk-zone {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--faint);
+  letter-spacing: .06em;
+}
+
+/* ── Flagged terms ── */
+.flags-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.flags-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.flags-count {
+  font-size: 9px;
+  background: var(--high-bg);
+  color: var(--high);
+  border: 1px solid var(--high-bd);
+  border-radius: 10px;
+  padding: 2px 8px;
+  letter-spacing: .06em;
+}
+.flags-count.zero {
+  background: var(--none-bg);
+  color: var(--none);
+  border-color: var(--none-bd);
+}
+.flags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.flag-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  background: var(--high-bg);
+  border: 1px solid var(--high-bd);
+  color: var(--high);
+  animation: tag-in .2s ease both;
+}
+@keyframes tag-in { from{opacity:0;transform:scale(.88)} to{opacity:1;transform:scale(1)} }
+.flag-tag-word { font-weight: 500; }
+.flag-tag-cat {
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: var(--muted);
+  background: var(--bg);
+  border-radius: 2px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+}
+.flags-empty {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--none);
+}
+
+/* ── Text preview ── */
+.text-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 20px;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+  word-break: break-word;
+}
+.text-preview mark {
+  background: var(--high-bg);
+  color: var(--high);
+  border-radius: 2px;
+  padding: 0 2px;
+  font-weight: 400;
+}
+
+/* ── Section title ── */
+.section-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+/* ── Batch area ── */
+.batch-area {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.batch-area:focus-within {
+  border-color: var(--border2);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+}
+.batch-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 20px;
+}
+.batch-btn:hover { background: var(--bg); }
+
+.batch-results { display: flex; flex-direction: column; gap: 6px; }
+.batch-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  animation: row-in .2s ease;
+}
+@keyframes row-in { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+.batch-text { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.batch-conf { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; }
+.batch-badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .1em;
+  padding: 3px 8px; border-radius: 3px; text-align: center; border: 1px solid transparent;
+}
+.batch-badge.NONE   { background: var(--none-bg);   color: var(--none);   border-color: var(--none-bd); }
+.batch-badge.LOW    { background: var(--low-bg);    color: var(--low);    border-color: var(--low-bd); }
+.batch-badge.MEDIUM { background: var(--medium-bg); color: var(--medium); border-color: var(--medium-bd); }
+.batch-badge.HIGH   { background: var(--high-bg);   color: var(--high);   border-color: var(--high-bd); }
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--faint);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Footer ── */
+.page-footer {
+  margin-top: 72px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.footer-note { font-size: 11px; color: var(--faint); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Wordmark -->
+  <div class="wordmark">
+    <span class="wordmark-name">CyberGuard</span>
+    <span class="wordmark-dot">·</span>
+    <span class="wordmark-tag">ML BULLYING DETECTOR</span>
+  </div>
+
+  <!-- Headline -->
+  <h1 class="headline">Detect harmful<br>language instantly.</h1>
+  <p class="subline">Paste any message below. The ensemble model (Logistic Regression + Random Forest + Gradient Boost) will classify it and return a full risk report with flagged terms and categories.</p>
+
+  <!-- Input -->
+  <div class="input-block">
+    <textarea id="input-text" placeholder="Type or paste a message to analyse…" maxlength="2000" oninput="onInput()"></textarea>
+    <div class="input-footer">
+      <span class="char-count" id="char-count">0 / 2000</span>
+      <button class="analyze-btn" id="analyze-btn" onclick="analyze()" disabled>Analyse</button>
+    </div>
+  </div>
+
+  <!-- Example chips -->
+  <div class="examples-label">Try an example</div>
+  <div class="examples">
+    <span class="ex-chip" onclick="setExample('Had a great day with friends today!')">Had a great day with friends!</span>
+    <span class="ex-chip" onclick="setExample('Congratulations on your achievement, well done!')">Congratulations on your achievement!</span>
+    <span class="ex-chip toxic" onclick="setExample('You are so stupid nobody likes you go die loser')">You are so stupid nobody likes you</span>
+    <span class="ex-chip toxic" onclick="setExample('Fuck off you worthless piece of shit nobody wants you here')">Fuck off you worthless piece of shit</span>
+    <span class="ex-chip toxic" onclick="setExample('Kill yourself you dumb bitch everyone hates you')">Kill yourself you dumb bitch</span>
+    <span class="ex-chip toxic" onclick="setExample('I will expose your address and nudes you stupid slut')">Expose your address and nudes</span>
+  </div>
+
+  <!-- Result -->
+  <div class="divider" id="divider"></div>
+  <div class="result" id="result"></div>
+
+  <!-- Batch -->
+  <div class="divider" style="opacity:1; margin: 48px 0 32px;"></div>
+  <div class="section-title">Batch Analysis</div>
+  <div class="batch-area">
+    <textarea id="batch-input" placeholder="One message per line — up to 20 messages…" style="min-height:90px;font-size:13px;"></textarea>
+  </div>
+  <button class="batch-btn" onclick="batchAnalyze()">Run Batch</button>
+  <div class="batch-results" id="batch-results"></div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <span class="footer-note">Ensemble · TF-IDF · 1–2 ngrams · <span id="footer-flags">—</span> flagged terms</span>
+    <span class="footer-note" id="footer-model">—</span>
+  </div>
+
+</div>
+
+<script>
+const inputEl   = document.getElementById('input-text');
+const btnEl     = document.getElementById('analyze-btn');
+const charEl    = document.getElementById('char-count');
+const resultEl  = document.getElementById('result');
+const dividerEl = document.getElementById('divider');
+
+// Fetch stats on load
+fetch('/stats').then(r => r.json()).then(d => {
+  document.getElementById('footer-model').textContent = d.training_samples + ' training samples';
+  document.getElementById('footer-flags').textContent = d.flagged_word_count;
+}).catch(() => {});
+
+function onInput() {
+  const len = inputEl.value.length;
+  charEl.textContent = len + ' / 2000';
+  charEl.className = 'char-count' + (len > 1800 ? ' warn' : '');
+  btnEl.disabled = len === 0;
+}
+
+function setExample(txt) {
+  inputEl.value = txt;
+  onInput();
+  inputEl.focus();
+}
+
+async function analyze() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  btnEl.disabled = true;
+  btnEl.innerHTML = '<span class="spinner"></span>Analysing';
+
+  try {
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (data.error) {
+      showError(data.error);
+    } else {
+      renderResult(data, text);
+    }
+  } catch (e) {
+    resultEl.innerHTML = '<p style="color:var(--high);font-family:var(--mono);font-size:12px;">Server error — is the backend running on port 5050?</p>';
+    resultEl.classList.add('visible');
+    dividerEl.classList.add('visible');
+  }
+
+  btnEl.disabled = false;
+  btnEl.textContent = 'Analyse';
+}
+
+function showError(msg) {
+  resultEl.innerHTML = `<p style="color:var(--high);font-family:var(--mono);font-size:12px;">${escapeHtml(msg)}</p>`;
+  resultEl.classList.add('visible');
+  dividerEl.classList.add('visible');
+}
+
+// Highlight flagged words (handles both string[] and {word,category}[] formats)
+function getWordStrings(flagged) {
+  return flagged.map(f => typeof f === 'object' ? f.word : f);
+}
+
+function highlightWords(text, flagged) {
+  const words = getWordStrings(flagged);
+  if (!words.length) return escapeHtml(text);
+  let result = escapeHtml(text);
+  words.forEach(w => {
+    const re = new RegExp('\\b' + escapeRegex(w) + '\\b', 'gi');
+    result = result.replace(re, m => `<mark>${m}</mark>`);
+  });
+  return result;
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function renderResult(d, originalText) {
+  const sev      = d.severity;
+  const isBully  = d.is_bullying;
+  const verdictText  = isBully ? 'Cyberbullying detected' : 'Message appears safe';
+  const verdictClass = isBully ? 'bullying' : 'safe';
+  const sevLabel = { NONE: 'No Risk', LOW: 'Low Risk', MEDIUM: 'Medium Risk', HIGH: 'High Risk' }[sev];
+
+  const confClass = d.confidence >= 80 ? 'ok' : d.confidence >= 55 ? 'warn' : 'danger';
+  const riskClass = d.risk_score >= 60 ? 'danger' : d.risk_score >= 30 ? 'warn' : 'ok';
+
+  // Build flagged terms HTML
+  const flagCount = d.flagged_words.length;
+  const flagCountClass = flagCount === 0 ? 'zero' : '';
+  let flagsHtml = '';
+  if (flagCount === 0) {
+    flagsHtml = '<span class="flags-empty">✓ No known toxic terms detected</span>';
+  } else {
+    flagsHtml = d.flagged_words.map((fw, i) => {
+      const word = typeof fw === 'object' ? fw.word : fw;
+      const cat  = typeof fw === 'object' ? fw.category : '';
+      const delay = `animation-delay:${i * 0.04}s`;
+      return `<span class="flag-tag" style="${delay}">
+        <span class="flag-tag-word">${escapeHtml(word)}</span>
+        ${cat ? `<span class="flag-tag-cat">${escapeHtml(cat)}</span>` : ''}
+      </span>`;
+    }).join('');
+  }
+
+  resultEl.innerHTML = `
+    <div class="verdict-row">
+      <div class="verdict-badge ${sev}">${sevLabel}</div>
+      <div class="verdict-label ${verdictClass}">${verdictText}</div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Risk Score</div>
+        <div class="metric-val ${riskClass}">${d.risk_score}<span style="font-size:14px">%</span></div>
+        <div class="metric-unit">bullying probability</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Confidence</div>
+        <div class="metric-val ${confClass}">${d.confidence}<span style="font-size:14px">%</span></div>
+        <div class="metric-unit">model certainty</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Words</div>
+        <div class="metric-val">${d.word_count}</div>
+        <div class="metric-unit">${d.text_length} characters</div>
+      </div>
+    </div>
+
+    <div class="risk-block">
+      <div class="risk-header">
+        <span class="risk-title">Risk Level</span>
+        <span class="risk-pct">${d.risk_score}%</span>
+      </div>
+      <div class="risk-track">
+        <div class="risk-fill ${sev}" id="risk-fill" style="width:0%"></div>
+      </div>
+      <div class="risk-zones">
+        <span class="risk-zone">None &lt;20%</span>
+        <span class="risk-zone">Low</span>
+        <span class="risk-zone">Medium</span>
+        <span class="risk-zone">High &gt;75%</span>
+      </div>
+    </div>
+
+    <div class="flags-block">
+      <div class="flags-title">
+        Flagged Terms
+        <span class="flags-count ${flagCountClass}">${flagCount} found</span>
+      </div>
+      <div class="flags-list">${flagsHtml}</div>
+    </div>
+
+    <div class="text-preview">${highlightWords(originalText, d.flagged_words)}</div>
+  `;
+
+  dividerEl.classList.add('visible');
+  resultEl.classList.remove('visible');
+  void resultEl.offsetWidth;
+  resultEl.classList.add('visible');
+
+  // Animate risk bar
+  setTimeout(() => {
+    const fill = document.getElementById('risk-fill');
+    if (fill) fill.style.width = d.risk_score + '%';
+  }, 60);
+}
+
+async function batchAnalyze() {
+  const raw = document.getElementById('batch-input').value.trim();
+  if (!raw) return;
+  const texts = raw.split('\n').map(t => t.trim()).filter(Boolean).slice(0, 20);
+  const container = document.getElementById('batch-results');
+  container.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const res = await fetch('/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts })
+    });
+    const data = await res.json();
+    container.innerHTML = '';
+    data.results.forEach((d, i) => {
+      const row = document.createElement('div');
+      row.className = 'batch-row';
+      row.style.animationDelay = i * 0.04 + 's';
+      row.innerHTML = `
+        <div class="batch-text" title="${escapeHtml(texts[i])}">${escapeHtml(texts[i])}</div>
+        <div class="batch-conf">${d.confidence}%</div>
+        <div class="batch-badge ${d.severity}">${d.severity}</div>`;
+      container.appendChild(row);
+    });
+  } catch (e) {
+    container.innerHTML = '<p style="color:var(--high);font-size:12px;font-family:var(--mono);">Server error</p>';
+  }
+}
+
+// Keyboard shortcut
+inputEl.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
+});
+</script>
+</body>
+</html>
